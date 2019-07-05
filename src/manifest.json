@@ -1,0 +1,57 @@
+{
+  "manifest_version": 2,
+  "name": "youtubectl",
+  "version": "1.0",
+  "description": "Helps control usage time of youtube",
+
+  "icons": {
+    "16": "icons/ico-16.png",
+    "24": "icons/ico-24.png",
+    "32": "icons/ico-32.png",
+    "48": "icons/ico-48.png"
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["*://*.youtube.com/*"],
+      "js": [
+        "js/TimeController.js",
+        "js/main.js"
+      ],
+      "run_at": "document_end"
+    }
+  ],
+
+  "permissions": [
+    "*://*.youtube.com/*",
+    "activeTab",
+    "webRequest",
+    "alarms",
+    "tabs",
+    "storage"
+  ],
+
+  "browser_action": {
+    "default_icon": "icons/ico-32.png",
+    "default_title": "Youtube time controller",
+    "default_popup": "settings/settings.html"
+  },
+  "background": {
+    "scripts": [
+      "js/background.js"
+    ]
+  },
+  "options_ui": {
+    "page": "settings/options.html",
+    "browser_style": true
+  },
+  "web_accessible_resources": [
+    "views/*.html"
+  ],
+  "incognito": "not_allowed",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "{df38ed7a-e067-48b6-8fe1-1c4e951901ad}"
+    }
+  }
+}

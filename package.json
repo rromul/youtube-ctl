@@ -1,0 +1,23 @@
+{
+  "name": "youtube-ctl",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {},
+  "devDependencies": {
+    "web-ext": "^3.0.0"
+  },
+  "webExt": {
+     "verbose": true,
+     "sourceDir": "src/",
+     "run":{
+      "startUrl": ["https://youtube.com"],
+      "browserConsole": true
+     }
+  }
+}
