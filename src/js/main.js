@@ -1,97 +1,8 @@
 'use strict';
+browser.storage.onChanged.addListener(changeOptions);
 
-class TimingFrame {
-    constructor(id = "timingFrame", contId = "container") {
-        this.frameId = id;
-        this.containerId = contId;
-        this.message = "";
-    }
 
-    get frame() {
-        let frame = document.querySelector('#' + this.frameId);
-        if (!frame) {
-            frame = document.createElement("div");
-            frame.id = this.frameId;
-            frame.style = "border: 1px solid red; border-radius: 10px 100px / 100px; color: green; padding: 2px";
-            let cont = document.querySelector('#' + this.containerId);
-            cont.insertAdjacentElement("afterbegin", frame);
-        }
-        return frame;
-    }
 
-    set text(text) {
-        this.message = text;
-        this.frame.innerText = text;
-    }
-
-    get text() {
-        return this.message;
-    }
-}
-
-class LogStoreInMemoryImpl {
-    constructor(host) {
-        this.host = host;
-        this.hostEvents = {};
-        this.hostEvents[host] = [];
-    }
-
-    push(record) {
-        const list = this.hostEvents[this.host];
-        list.push(record);
-    }
-    get records() {
-        return this.hostEvents[this.host];
-    }
-}
-
-class LogStoreSyncImpl {
-    constructor(host, storage) {
-        this.host = host;
-        this.hostEvents = {};
-        this.hostEvents[host] = [];
-        this.storage = storage;
-    }
-
-    push(record) {
-        const me = this,
-            stor = this.storage;
-        stor.get("events").then(item => {
-            const events = item.events || {};
-            const arrEvents = events[me.host] || [];
-            arrEvents.push(record);
-            events[me.host] = arrEvents;
-
-            stor.set({
-                events
-            }).then(() => {
-                //refresh
-                me.hostEvents = events;
-            });
-        });
-    }
-
-    get records() {
-        return this.hostEvents[this.host];
-    }
-
-    clear(date) {
-        const me = this,
-            stor = this.storage,
-            dt = date ? date.toLocaleDateString("en") : null;
-        stor.get("events").then(item => {
-            if (item.events) {
-                const arrEvents = (item.events[me.host] || []).filter(r => dt && r.dt != dt);
-                stor.set({
-                    events: arrEvents
-                }).then(() => {
-                    //refresh
-                    me.hostEvents = [];
-                });
-            }
-        });
-    }
-}
 
 class MediaEventLogger {
 
@@ -137,20 +48,30 @@ class MediaEventLogger {
 
 
 const hostKey = location.host;
-const timingFrame = new TimingFrame();
+const timingFrame = new TimeFrame();
 //const logger = new MediaEventLogger(new LogStoreInMemoryImpl(hostKey));
 const logger = new MediaEventLogger(new LogStoreSyncImpl(hostKey, browser.storage.sync));
 const timeController = new TimeController(hostKey, logger);
-let video, tm, options = { minutes: 60 };
+let video, tmInterval, options = {
+    minutes: 60
+};
 
 browser.storage.sync.get("options").then((item) => {
     options = item.options || options;
 });
 
+
+
+function changeOptions(changes, area) {
+    if (changes["options"].oldValue != changes["options"].newValue){
+        options = changes["options"].newValue;
+    }
+}
+
 if (document.readyState === "loading")
     document.addEventListener("DOMContentLoaded", onDOMContentLoaded);
 else
-    setTimeout(onDOMContentLoaded, 10000);
+    onDOMContentLoaded();
 
 function onDOMContentLoaded() {
     video = document.querySelector('video');
@@ -158,48 +79,64 @@ function onDOMContentLoaded() {
     if (video) {
         console.log("Attaching video events!");
 
-        if (!video.paused) {
-            playStarted('playback is started');
-        }
+        if (!video.paused)
+            playStarted('');
 
         video.addEventListener('play', (event) => playStarted());
         video.addEventListener('ended', (event) => playStopped('ended'));
         video.addEventListener('pause', (event) => playStopped('pause'));
 
-        // video.addEventListener('playing', (event) => {
-        //     logger.log('playing');
-        // });
-
         startTimer();
     } else {
-        console.error("video is null!");
+        console.error("video is null!", "trying to onDOMContentLoaded in 3 seconds");
+        setTimeout(onDOMContentLoaded, 3000);
     }
 }
 
 function startTimer() {
-    tm = setInterval(() => drawTiming("tick"), 2000);
+    if (!tmInterval)
+        tmInterval = setInterval(() => checkTime(""), 1000);
+}
+
+function stopTimer() {
+    if (tmInterval) {
+        clearInterval(tmInterval);
+        tmInterval = null;
+    }
 }
 
 function playStarted(txt = 'play') {
     logger.logPlay();
-    drawTiming(txt);
+    checkTime('');
+    startTimer();
 }
 
 function playStopped(txt) {
     logger.logStop();
-    drawTiming(txt);
-    if (tm) {
-        clearInterval(tm);
-        tm = null;
-    }
+    checkTime('');
+    stopTimer();
 }
 
-function drawTiming(txt) {
+function checkTime(txt) {
     const seconds = timeController.calculateSeconds();
-    timingFrame.text = txt + " " + seconds + " sec";
+    const totalMins = options.minutes;
+    timingFrame.text = `${txt} ${secs2Mins(seconds)}/${totalMins}:00`;
     if (seconds > options.minutes * 60) {
         if (!video.paused) video.pause();
         showAlert(seconds);
+    }
+}
+
+function secs2Mins(seconds, txt = "c.") {
+    if (seconds < 59) {
+        return pad0(seconds) + txt;
+    } else {
+        const mins = Math.floor(seconds / 60);
+        return pad0(mins) + ":" + pad0(seconds - mins * 60);
+    }
+
+    function pad0(n) {
+        return String(n).length == 1 ? `0${n}` : String(n);
     }
 }
 
@@ -208,17 +145,11 @@ function showAlert(seconds) {
     if (!alertFrame) {
         alertFrame = document.createElement("div");
         alertFrame.id = "ytbctlAlertFrame";
-        alertFrame.style = "border: 1px solid red; position: fixed; top: 200px; left: 200px; background: blue; color: white; font-size: 3em; width: 400px; height: 250px; z-index: 1000;";
+        alertFrame.className = "alertFrame";
         const msgFrame = document.createElement("div");
         alertFrame.insertAdjacentElement("afterBegin", msgFrame);
-        msgFrame.innerText = "Сегодня время просмотра составило " + Math.round(seconds) + " секунд!";
-        const btn = document.createElement("button");
-        btn.textContent = "Очистить лог";
-        btn.onclick = (e) => {
-            logger.store.clear();
-            alertFrame.style.display = "none";
-        };
-        alertFrame.insertAdjacentElement("beforeEnd", btn);
+        msgFrame.innerText = "Сегодня время просмотра составило " + secs2Mins(seconds) + "!";
+
         const columns = document.querySelector("#columns");
         columns.insertAdjacentElement("afterBegin", alertFrame);
     } else {

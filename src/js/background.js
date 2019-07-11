@@ -17,18 +17,6 @@ browser.runtime.onInstalled.addListener(async ({
 });
 
 
-const delayInMinutes = 1;
-const periodInMinutes = 1;
-
-// browser.alarms.create("youtube-ctl-check", {
-//     delayInMinutes,
-//     periodInMinutes
-// });
-
-// browser.alarms.onAlarm.addListener(function (info) {
-//     console.log("on alarm: " + info.name);
-// });
-
 browser.tabs.onActivated.addListener(function(tabInfo){
     
     browser.tabs.get(tabInfo.tabId).then((tab) => {
@@ -44,7 +32,7 @@ browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (!changeInfo.url) {
         return;
     }
-    var gettingActiveTab = browser.tabs.query({
+    browser.tabs.query({
         active: true,
         currentWindow: true
     }).then((tabs) => {

@@ -7,23 +7,37 @@ function saveOptions(e) {
     });
 }
 
-function restoreOptions() {
+function onDOMContentLoaded() {
 
-    function setCurrentChoice(result) {
-        document.getElementById("minutes").value = result.minutes || 60;
+    function setCurrentOptions(storageItem) {
+        const opts = storageItem.options;
+        document.getElementById("minutes").value = opts.minutes || 60;
+        document.getElementById("saveBtn").disabled = false;
     }
 
     function onError(error) {
-        console.log(`Error: ${error}`);
+        console.error(error);
     }
 
-    browser.storage.sync.get("options").then(setCurrentChoice, onError);
+    browser.storage.sync.get("options").then(setCurrentOptions, onError);
+
+    const hostKey = "www.youtube.com";
+    const store = new LogStoreSyncImpl(hostKey, browser.storage.sync);
+    const clearLogBtn = document.getElementById("clearLogBtn");
+    store.getEvents(() => {
+        clearLogBtn.disabled = !store.hasRecords;
+    });
+    clearLogBtn.onclick = () => {
+        if (confirm("Очистить журнал?")) {
+            store.clear();
+        }
+    }
 }
 
 
 if (document.readyState == "loading")
-    document.addEventListener("DOMContentLoaded", restoreOptions);
+    document.addEventListener("DOMContentLoaded", onDOMContentLoaded);
 else
-    restoreOptions();
+    onDOMContentLoaded();
 
 document.querySelector("form").addEventListener("submit", saveOptions);
