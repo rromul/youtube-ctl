@@ -1,7 +1,19 @@
 'use strict';
+let video, tmInterval, options = {
+    minutes: 60
+};
+
+
+const hostKey = location.host;
+const timingFrame = new TimeFrame();
+
 browser.storage.onChanged.addListener(changeOptions);
 
+browser.storage.sync.get("options").then((item) => {
+    options = item.options || options;
+});
 
+//window.addEventListener("resize")
 
 
 class MediaEventLogger {
@@ -30,7 +42,7 @@ class MediaEventLogger {
         this.store.push(record);
 
         console.log("record", record);
-        console.log("this.store.records", this.store.records);
+        //console.log("this.store.records", this.store.records);
     }
 
     logPlay() {
@@ -46,38 +58,26 @@ class MediaEventLogger {
     }
 }
 
-
-const hostKey = location.host;
-const timingFrame = new TimeFrame();
 //const logger = new MediaEventLogger(new LogStoreInMemoryImpl(hostKey));
 const logger = new MediaEventLogger(new LogStoreSyncImpl(hostKey, browser.storage.sync));
 const timeController = new TimeController(hostKey, logger);
-let video, tmInterval, options = {
-    minutes: 60
-};
-
-browser.storage.sync.get("options").then((item) => {
-    options = item.options || options;
-});
-
-
 
 function changeOptions(changes, area) {
-    if (changes["options"].oldValue != changes["options"].newValue){
-        options = changes["options"].newValue;
+    const opts = changes["options"];
+    if (!opts) return;
+    if (opts.oldValue != opts.newValue) {
+        options = opts.newValue;
     }
 }
 
-if (document.readyState === "loading")
-    document.addEventListener("DOMContentLoaded", onDOMContentLoaded);
-else
-    onDOMContentLoaded();
+let alertBox ;
 
 function onDOMContentLoaded() {
     video = document.querySelector('video');
 
     if (video) {
         console.log("Attaching video events!");
+        alertBox = new AlertFrame(video);
 
         if (!video.paused)
             playStarted('');
@@ -89,7 +89,7 @@ function onDOMContentLoaded() {
         startTimer();
     } else {
         console.error("video is null!", "trying to onDOMContentLoaded in 3 seconds");
-        setTimeout(onDOMContentLoaded, 3000);
+        setTimeout(onDOMContentLoaded, 2000);
     }
 }
 
@@ -121,38 +121,35 @@ function checkTime(txt) {
     const seconds = timeController.calculateSeconds();
     const totalMins = options.minutes;
     timingFrame.text = `${txt} ${secs2Mins(seconds)}/${totalMins}:00`;
-    if (seconds > options.minutes * 60) {
+    const secsLimit = totalMins * 60;
+    if (seconds > secsLimit) {
+        exitFullScreen();
         if (!video.paused) video.pause();
-        showAlert(seconds);
+        alertBox.show(seconds);
     }
 }
 
-function secs2Mins(seconds, txt = "c.") {
-    if (seconds < 59) {
-        return pad0(seconds) + txt;
-    } else {
-        const mins = Math.floor(seconds / 60);
-        return pad0(mins) + ":" + pad0(seconds - mins * 60);
-    }
-
-    function pad0(n) {
-        return String(n).length == 1 ? `0${n}` : String(n);
+function exitFullScreen() {
+    if (document.fullscreenElement) {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        }
     }
 }
 
-function showAlert(seconds) {
-    let alertFrame = document.querySelector("#ytbctlAlertFrame");
-    if (!alertFrame) {
-        alertFrame = document.createElement("div");
-        alertFrame.id = "ytbctlAlertFrame";
-        alertFrame.className = "alertFrame";
-        const msgFrame = document.createElement("div");
-        alertFrame.insertAdjacentElement("afterBegin", msgFrame);
-        msgFrame.innerText = "Сегодня время просмотра составило " + secs2Mins(seconds) + "!";
+const wndResize = debounce(() => {
+        console.log("wndResize", new Date);
+        alertBox.setPosition();
+    }, 100);
 
-        const columns = document.querySelector("#columns");
-        columns.insertAdjacentElement("afterBegin", alertFrame);
-    } else {
-        alertFrame.style.display = "";
-    }
+function wndUnload() {
+    console.log("wndUnload")
+    window.removeEventListener("resize", wndResize);
 }
+
+window.addEventListener("resize", wndResize);
+window.addEventListener("unload", wndUnload);
+document.addEventListener("DOMContentLoaded", onDOMContentLoaded);
+
+if (document.readyState != "loading")
+    onDOMContentLoaded();

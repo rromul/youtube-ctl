@@ -1,30 +1,53 @@
-function saveOptions(e) {
-    e.preventDefault();
-    browser.storage.sync.set({
-        options: {
-            minutes: parseInt(document.getElementById("minutes").value)
-        }
+const
+    clearLogBtn = document.getElementById("clearLogBtn"),
+    hostKey = "www.youtube.com",
+    browserStorage = browser.storage.sync,
+    store = new LogStoreSyncImpl(hostKey, browserStorage);
+
+browser.storage.onChanged.addListener(changeOptions);
+
+function changeOptions(){
+    clearLogBtn.disabled = !store.hasRecords;
+}
+
+function getOptions() {
+    return browserStorage.get("options");
+}
+
+function setOptions(options){
+    return browserStorage.set({
+        options
     });
 }
 
 function onDOMContentLoaded() {
+    const
+        saveBtn = document.getElementById("saveBtn"),
+        form = document.getElementById("optionsForm"),
+        minutesTb = document.getElementById("minutes");
 
-    function setCurrentOptions(storageItem) {
+    function saveOptions(e) {
+        e.preventDefault();
+        let minutes = parseInt(minutesTb.value);
+        setOptions({ minutes }).then(() => {
+            saveBtn.disabled = true;
+        });
+    }
+
+    function initOptionsForm(storageItem) {
         const opts = storageItem.options;
-        document.getElementById("minutes").value = opts.minutes || 60;
-        document.getElementById("saveBtn").disabled = false;
+        if (opts) {
+            minutesTb.value = opts.minutes || 60;
+        }
     }
 
     function onError(error) {
         console.error(error);
     }
 
-    browser.storage.sync.get("options").then(setCurrentOptions, onError);
+    getOptions().then(initOptionsForm, onError);
 
-    const hostKey = "www.youtube.com";
-    const store = new LogStoreSyncImpl(hostKey, browser.storage.sync);
-    const clearLogBtn = document.getElementById("clearLogBtn");
-    store.getEvents(() => {
+    store.getEvents().then(() => {
         clearLogBtn.disabled = !store.hasRecords;
     });
     clearLogBtn.onclick = () => {
@@ -32,6 +55,13 @@ function onDOMContentLoaded() {
             store.clear();
         }
     }
+
+
+    form.onchange = () => {
+        saveBtn.disabled = false;
+    };
+    saveBtn.onclick = saveOptions;
+
 }
 
 
@@ -39,5 +69,3 @@ if (document.readyState == "loading")
     document.addEventListener("DOMContentLoaded", onDOMContentLoaded);
 else
     onDOMContentLoaded();
-
-document.querySelector("form").addEventListener("submit", saveOptions);

@@ -20,14 +20,16 @@
         //mocha.growl(); // <-- Enables web notifications
     </script>
 
-    <script src="test.array.js"></script>
-
     <script src="../src/js/TimeController.js"></script>
     <script src="test.TimeController.js"></script>
+
+    <script src="../src/js/logstore.js"></script>
+    <script src="test.logstore.js"></script>
 
     <script class="mocha-exec">
         mocha.run();
         chai.should();
+        chai.expect();
     </script>
 </body>
 

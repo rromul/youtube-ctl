@@ -2,15 +2,27 @@ class LogStoreInMemoryImpl {
     constructor(host) {
         this.host = host;
         this.hostEvents = {};
-        this.hostEvents[host] = [];
+        this.records = [];
     }
 
     push(record) {
-        const list = this.hostEvents[this.host];
+        const list = this.records;
         list.push(record);
     }
     get records() {
         return this.hostEvents[this.host];
+    }
+
+    set records(value) {
+        return this.hostEvents[this.host] = value;
+    }
+
+    get hasRecords() {
+        return this.records.length > 0;
+    }
+
+    clear() {
+        this.records = [];
     }
 }
 
@@ -41,34 +53,37 @@ class LogStoreSyncImpl extends LogStoreInMemoryImpl {
     getEvents() {
         const me = this,
             stor = this.storage;
-        stor.get("events").then(item => {
+        return stor.get("events").then(item => {
             me.hostEvents = item.events || {};
             return me.hostEvents;
         });
-    }
-
-    get records() {
-        return this.hostEvents[this.host];
-    }
-
-    get hasRecords() {
-        return this.records.length > 0;
     }
 
     clear(date) {
         const me = this,
             stor = this.storage,
             dt = date ? date.toLocaleDateString("en") : null;
-        stor.get("events").then(item => {
-            if (item.events) {
-                const arrEvents = (item.events[me.host] || []).filter(r => dt && r.dt != dt);
-                stor.set({
+        const gettingEvents = stor.
+            get("events").
+            then(items => {
+                //console.log("LogStoreSyncImpl");
+                return items && items.events ? items.events : null;
+            });
+        
+        return gettingEvents.then(events => {
+            let retProm = Promise.resolve(true);
+            console.log("events", events);
+            if (events) {
+                const arrEvents = [...(events[me.host] || []).filter(r => dt && r.dt != dt)];
+                retProm = retProm.stor.set({
                     events: arrEvents
                 }).then(() => {
-                    //refresh
-                    me.hostEvents = [];
+                    console.log("me.records = []");
+                    me.records = [];
+                    return true;
                 });
             }
+            return retProm;
         });
     }
 }

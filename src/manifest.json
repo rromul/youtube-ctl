@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "youtubectl",
   "version": "1.0",
-  "description": "Helps control usage time of youtube",
+  "description": "Расширение Youtube time controller помогает контролировать время, проведенное за просмотром youtube.com",
   "icons": {
     "16": "icons/ico-16.png",
     "24": "icons/ico-24.png",
@@ -15,6 +15,7 @@
         "*://*.youtube.com/*"
       ],
       "js": [
+        "js/utils.js",
         "js/logstore.js",
         "js/TimeController.js",
         "js/timeframe.js",
@@ -27,7 +28,8 @@
     "*://*.youtube.com/*",
     "activeTab",
     "tabs",
-    "storage"
+    "storage",
+    "notifications"
   ],
   "browser_action": {
     "default_icon": "icons/ico-32.png",

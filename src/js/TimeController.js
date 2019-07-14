@@ -29,24 +29,24 @@ class TimeController {
                 if (intervals.length == 0) {
                     intervals.push({
                         s: Date.parse(r.dt),
-                        e: r.time
+                        e: parseInt(r.time)
                     });
                 } else {
                     intervals[intervals.length - 1].e = r.time;
                 }
             } else if (r.event == 'start') {
                 if ((intervals.length - 1) >= 0 && intervals[intervals.length - 1].e === undefined) {
-                    intervals[intervals.length - 1].e = r.time;
+                    intervals[intervals.length - 1].e = parseInt(r.time);
                 }
                 intervals.push({
-                    s: r.time
+                    s: parseInt(r.time)
                 });
             }
         }
         if (closeLastEventTime && intervals.length > 0 && intervals[intervals.length - 1].e === undefined) {
             intervals[intervals.length - 1].e = closeLastEventTime;
         }
-        console.log("intervals", intervals);
+        //console.log("intervals", intervals);
         return intervals;
     }
 }

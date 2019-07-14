@@ -16,6 +16,12 @@ browser.runtime.onInstalled.addListener(async ({
     }
 });
 
+browser.browserAction.onClicked.addListener(() => {
+    var clearing = browser.notifications.clear("youtube-time-ctl");
+    clearing.then(() => {
+        console.log("cleared");
+    });
+});
 
 browser.tabs.onActivated.addListener(function(tabInfo){
     
