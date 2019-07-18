@@ -2,7 +2,8 @@
     box-sizing: border-box;
     border: 1px solid red; 
     border-radius: 10px;
-    position: fixed; 
+    /* position: fixed; */
+    position: absolute;
     top: 200px;
     left: 10px;
     width: calc(100% - 20px);

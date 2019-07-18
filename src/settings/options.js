@@ -24,12 +24,17 @@ function onDOMContentLoaded() {
     const
         saveBtn = document.getElementById("saveBtn"),
         form = document.getElementById("optionsForm"),
-        minutesTb = document.getElementById("minutes");
+        minutesTb = document.getElementById("minutes"),
+        alertMsgTb = document.getElementById("alertMsgTb");
 
     function saveOptions(e) {
         e.preventDefault();
         let minutes = parseInt(minutesTb.value);
-        setOptions({ minutes }).then(() => {
+        setOptions({ 
+            minutes,
+            alert: {msg: alertMsgTb.value }
+        }).
+        then(() => {
             saveBtn.disabled = true;
         });
     }
@@ -38,6 +43,7 @@ function onDOMContentLoaded() {
         const opts = storageItem.options;
         if (opts) {
             minutesTb.value = opts.minutes || 60;
+            alertMsgTb.value = opts.alert ? opts.alert.msg || "" : "";
         }
     }
 
@@ -55,7 +61,6 @@ function onDOMContentLoaded() {
             store.clear();
         }
     }
-
 
     form.onchange = () => {
         saveBtn.disabled = false;

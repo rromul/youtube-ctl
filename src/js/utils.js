@@ -1,12 +1,17 @@
+
 class AlertFrame {
-    constructor(video = null, selector = "#ytbctlAlertFrame") {
-        this.alertFrame = document.querySelector(selector);
+    constructor(video = null, options) {
+        const opts = Object.assign({}, AlertFrame.defaults, options);
+        this.options = opts;
+        this.alertFrame = document.querySelector(opts.selector);
         this.video = video;
+        this.attachTo = document.querySelector(opts.attachToSel);
     }
     show(seconds) {
-        let msgFrame;
+        let msgFrame, customMsg;
         if (!this.alertFrame) {
             this.alertFrame = document.createElement("div");
+            this.attachTo.insertAdjacentElement("afterBegin", this.alertFrame);
             this.alertFrame.id = "ytbctlAlertFrame";
             this.alertFrame.className = "alertFrame";
             const titleDiv = document.createElement("div");
@@ -18,15 +23,19 @@ class AlertFrame {
             msgFrame.className = "yc-msg-frame";
             this.alertFrame.appendChild(msgFrame);
 
-            const columns = document.querySelector("#columns");
-            columns.insertAdjacentElement("afterBegin", this.alertFrame);
+            customMsg = document.createElement("div");
+            customMsg.className = "yc-msg-custom";
+            this.alertFrame.appendChild(customMsg);
+
         } else {
             this.alertFrame.style.display = "";
             msgFrame = this.alertFrame.querySelector("div.yc-msg-frame");
+            customMsg = this.alertFrame.querySelector("div.yc-msg-custom");
         }
         const sTime = secs2Mins(seconds);
         const warn = `Сегодня время просмотра составило ${sTime}!`;
         msgFrame.innerText = warn;
+        customMsg.innerText = this.options.alert.msg;
         this.setPosition(this.alertFrame, this.video);
         this.generateSound([0.8, 0.5]);
         this.createNotification(sTime);
@@ -36,12 +45,13 @@ class AlertFrame {
         const elem = this.alertFrame,
             v = this.video;
         setTimeout(() => {
+            let scTop = document.scrollingElement.scrollTop;
             const rect = v.getBoundingClientRect();
             if (elem) {
-                elem.style.top = (parseInt(rect.top)+1) + "px";
-                elem.style.left = (Math.round(rect.left)+1) + "px";
-                elem.style.width = (parseInt(rect.width)-2) + "px";
-                elem.style.height = (parseInt(rect.height)-2) + "px";
+                elem.style.top = (Math.floor(rect.top) + scTop) + "px";
+                elem.style.left = (Math.floor(rect.left)) + "px";
+                elem.style.width = (Math.ceil(rect.width)) + "px";
+                elem.style.height = (Math.ceil(rect.height)) + "px";
             }
         }, 100);
     }
@@ -76,6 +86,11 @@ class AlertFrame {
     }
 }
 
+AlertFrame.defaults = {
+    selector: "#ytbctlAlertFrame",
+    attachToSel: "#columns",
+    alert: {msg: ""}
+};
 
 
 function secs2Mins(seconds, txt = "c.") {

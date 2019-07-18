@@ -11,6 +11,7 @@ browser.storage.onChanged.addListener(changeOptions);
 
 browser.storage.sync.get("options").then((item) => {
     options = item.options || options;
+
 });
 
 //window.addEventListener("resize")
@@ -70,14 +71,15 @@ function changeOptions(changes, area) {
     }
 }
 
-let alertBox ;
+function getAlert() {
+    return new AlertFrame(video, options);
+}
 
 function onDOMContentLoaded() {
     video = document.querySelector('video');
 
     if (video) {
         console.log("Attaching video events!");
-        alertBox = new AlertFrame(video);
 
         if (!video.paused)
             playStarted('');
@@ -120,12 +122,17 @@ function playStopped(txt) {
 function checkTime(txt) {
     const seconds = timeController.calculateSeconds();
     const totalMins = options.minutes;
-    timingFrame.text = `${txt} ${secs2Mins(seconds)}/${totalMins}:00`;
+    const time = `${txt} ${secs2Mins(seconds)}/${totalMins}:00`;
+    timingFrame.text = `${secs2Mins(seconds,'')}/${totalMins}:00`;
+    browser.runtime.sendMessage({
+        badgeText: time,
+        browserActionTitle: "Youtube time controller: " + message.badgeText
+    });
     const secsLimit = totalMins * 60;
     if (seconds > secsLimit) {
         exitFullScreen();
         if (!video.paused) video.pause();
-        alertBox.show(seconds);
+        getAlert().show(seconds);
     }
 }
 
@@ -138,18 +145,19 @@ function exitFullScreen() {
 }
 
 const wndResize = debounce(() => {
-        console.log("wndResize", new Date);
-        alertBox.setPosition();
-    }, 100);
+    getAlert().setPosition();
+}, 200);
 
 function wndUnload() {
-    console.log("wndUnload")
+    //    console.log("wndUnload")
     window.removeEventListener("resize", wndResize);
 }
 
 window.addEventListener("resize", wndResize);
 window.addEventListener("unload", wndUnload);
-document.addEventListener("DOMContentLoaded", onDOMContentLoaded);
+document.addEventListener("DOMContentLoaded", onDOMContentLoaded, {
+    once: true
+});
 
 if (document.readyState != "loading")
     onDOMContentLoaded();

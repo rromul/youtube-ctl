@@ -23,8 +23,8 @@ browser.browserAction.onClicked.addListener(() => {
     });
 });
 
-browser.tabs.onActivated.addListener(function(tabInfo){
-    
+browser.tabs.onActivated.addListener(function (tabInfo) {
+
     browser.tabs.get(tabInfo.tabId).then((tab) => {
         console.log("on activated: " + tab.url);
         //Start logging if url == youtube.com
@@ -43,7 +43,25 @@ browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
         currentWindow: true
     }).then((tabs) => {
         if (tabId == tabs[0].id) {
-            
+
         }
     });
 });
+
+browser.runtime.onMessage.addListener(function (message, request, response) {
+    if (message.badgeText)
+        setBadge(message.badgeText);
+    if (message.browserActionTitle)
+        browser.browserAction.setTitle({
+            title: browserActionTitle
+        });
+});
+
+
+
+function setBadge(text) {
+
+    browser.browserAction.setBadgeText({
+        text
+    });
+}

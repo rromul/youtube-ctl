@@ -8,7 +8,11 @@
     "start": "web-ext run",
     "test": "firefox $(pwd)/tests/mocha.html"
   },
-  "author": "",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:rromul/youtube-ctl.git"
+  },
+  "author": "Roman",
   "license": "ISC",
   "dependencies": {},
   "devDependencies": {
