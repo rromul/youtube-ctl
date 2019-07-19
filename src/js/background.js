@@ -16,51 +16,42 @@ browser.runtime.onInstalled.addListener(async ({
     }
 });
 
-browser.browserAction.onClicked.addListener(() => {
-    var clearing = browser.notifications.clear("youtube-time-ctl");
-    clearing.then(() => {
-        console.log("cleared");
-    });
-});
+// browser.browserAction.onClicked.addListener(() => {
+//     var clearing = browser.notifications.clear("youtube-time-ctl");
+//     clearing.then(() => {
+//         console.log("cleared");
+//     });
+// });
 
 browser.tabs.onActivated.addListener(function (tabInfo) {
-
     browser.tabs.get(tabInfo.tabId).then((tab) => {
-        console.log("on activated: " + tab.url);
+        //console.log("on activated: " + tab.url);
         //Start logging if url == youtube.com
+        try {
+            browser.tabs.sendMessage(tabInfo.tabId, {
+                msg: "tab-activated",
+                url: tab.url
+            });
+        } catch (e) {}
     });
 });
 
-/*
-    Do something in the currently active tab, whenever the user navigates.
-*/
-browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-    if (!changeInfo.url) {
-        return;
-    }
-    browser.tabs.query({
-        active: true,
-        currentWindow: true
-    }).then((tabs) => {
-        if (tabId == tabs[0].id) {
-
-        }
-    });
-});
 
 browser.runtime.onMessage.addListener(function (message, request, response) {
     if (message.badgeText)
         setBadge(message.badgeText);
     if (message.browserActionTitle)
-        browser.browserAction.setTitle({
-            title: browserActionTitle
-        });
+        setTitle(message.browserActionTitle);
 });
 
 
+function setTitle(title) {
+    browser.browserAction.setTitle({
+        title: title
+    });
+}
 
 function setBadge(text) {
-
     browser.browserAction.setBadgeText({
         text
     });

@@ -1,12 +1,15 @@
 const
-    clearLogBtn = document.getElementById("clearLogBtn"),
+    byId = function (id) {
+        return document.getElementById(id)
+    },
+    clearLogBtn = byId("clearLogBtn"),
     hostKey = "www.youtube.com",
     browserStorage = browser.storage.sync,
     store = new LogStoreSyncImpl(hostKey, browserStorage);
 
 browser.storage.onChanged.addListener(changeOptions);
 
-function changeOptions(){
+function changeOptions() {
     clearLogBtn.disabled = !store.hasRecords;
 }
 
@@ -14,29 +17,47 @@ function getOptions() {
     return browserStorage.get("options");
 }
 
-function setOptions(options){
+function setOptions(options) {
     return browserStorage.set({
         options
     });
 }
 
 function onDOMContentLoaded() {
-    const
-        saveBtn = document.getElementById("saveBtn"),
-        form = document.getElementById("optionsForm"),
-        minutesTb = document.getElementById("minutes"),
-        alertMsgTb = document.getElementById("alertMsgTb");
 
-    function saveOptions(e) {
+    const
+        saveBtn = byId("saveBtn"),
+        form = byId("optionsForm"),
+        minutesTb = byId("minutes"),
+        alertMsgTb = byId("alertMsgTb"),
+        alertSndCb = byId("alertSoundCB");
+
+    async function saveOptions(e) {
         e.preventDefault();
         let minutes = parseInt(minutesTb.value);
-        setOptions({ 
-            minutes,
-            alert: {msg: alertMsgTb.value }
-        }).
-        then(() => {
+        //console.log(alertSndCb.checked)
+        // setOptions({
+        //     minutes,
+        //     alert: {
+        //         msg: alertMsgTb.value,
+        //         sound: alertSndCb.checked
+        //     }
+        // }).
+        // then(() => {
+        //     saveBtn.disabled = true;
+        // });
+        try {
+            await setOptions({
+                minutes,
+                alert: {
+                    msg: alertMsgTb.value,
+                    sound: alertSndCb.checked
+                }
+            });
             saveBtn.disabled = true;
-        });
+        } catch (e) {
+            console.error(e);
+        }
     }
 
     function initOptionsForm(storageItem) {
@@ -44,6 +65,7 @@ function onDOMContentLoaded() {
         if (opts) {
             minutesTb.value = opts.minutes || 60;
             alertMsgTb.value = opts.alert ? opts.alert.msg || "" : "";
+            alertSndCb.checked = !opts.alert || opts.alert.sound === undefined || opts.alert.sound;
         }
     }
 
@@ -65,7 +87,7 @@ function onDOMContentLoaded() {
     form.onchange = () => {
         saveBtn.disabled = false;
     };
-    saveBtn.onclick = saveOptions;
+    saveBtn.addEventListener("click", evt => saveOptions(evt));
 
 }
 

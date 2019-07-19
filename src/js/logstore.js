@@ -18,7 +18,7 @@ class LogStoreInMemoryImpl {
     }
 
     get hasRecords() {
-        return this.records.length > 0;
+        return this.records && this.records.length > 0;
     }
 
     clear() {

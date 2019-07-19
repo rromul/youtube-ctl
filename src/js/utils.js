@@ -1,4 +1,3 @@
-
 class AlertFrame {
     constructor(video = null, options) {
         const opts = Object.assign({}, AlertFrame.defaults, options);
@@ -37,7 +36,9 @@ class AlertFrame {
         msgFrame.innerText = warn;
         customMsg.innerText = this.options.alert.msg;
         this.setPosition(this.alertFrame, this.video);
-        this.generateSound([0.8, 0.5]);
+        console.log(this.options);
+        if (this.options.alert.sound || this.options.alert.sound === undefined)
+            this.generateSound([0.8, 0.5]);
         this.createNotification(sTime);
     }
 
@@ -49,8 +50,8 @@ class AlertFrame {
             const rect = v.getBoundingClientRect();
             if (elem) {
                 elem.style.top = (Math.floor(rect.top) + scTop) + "px";
-                elem.style.left = (Math.floor(rect.left)) + "px";
-                elem.style.width = (Math.ceil(rect.width)) + "px";
+                elem.style.left = rect.left + "px";
+                elem.style.width = rect.width + "px";
                 elem.style.height = (Math.ceil(rect.height)) + "px";
             }
         }, 100);
@@ -93,7 +94,7 @@ AlertFrame.defaults = {
 };
 
 
-function secs2Mins(seconds, txt = "c.") {
+function secs2Mins(seconds, txt = "c") {
     if (seconds < 59) {
         return pad0(seconds) + txt;
     } else {

@@ -19,6 +19,7 @@
         "js/logstore.js",
         "js/TimeController.js",
         "js/timeframe.js",
+        "js/MediaEventLogger.js",
         "js/main.js"
       ],
       "css": ["css/styles.css"]

@@ -1,69 +1,39 @@
 'use strict';
+
+const hostKey = location.host;
 let video, tmInterval, options = {
     minutes: 60
 };
+let timingFrame, logger, timeController;
 
-
-const hostKey = location.host;
-const timingFrame = new TimeFrame();
-
-browser.storage.onChanged.addListener(changeOptions);
+browser.storage.onChanged.addListener(onChangeOptions);
+browser.runtime.onMessage.addListener(onMessage);
 
 browser.storage.sync.get("options").then((item) => {
     options = item.options || options;
-
 });
 
-//window.addEventListener("resize")
+const onWndResize = debounce(() => {
+    getAlert().setPosition();
+}, 200);
 
+window.addEventListener("resize", onWndResize);
+window.addEventListener("unload", onWndUnload);
+document.addEventListener("DOMContentLoaded", onDOMContentLoaded, {
+    once: true
+});
 
-class MediaEventLogger {
-
-    constructor(logStoreImpl) {
-        this.store = logStoreImpl;
-    }
-
-    log(eventName) {
-        const dt = new Date().toLocaleDateString('en');
-
-        const record = {
-            event: eventName,
-            dt: dt,
-            time: Date.now(),
-            host: this.store.host,
-            search: location.search
-        };
-        const ownerEl = document.querySelectorAll(".ytd-video-owner-renderer a");
-        if (ownerEl.length) {
-            record.channel = {
-                owner: ownerEl[0].innerText
-            };
-        }
-
-        this.store.push(record);
-
-        console.log("record", record);
-        //console.log("this.store.records", this.store.records);
-    }
-
-    logPlay() {
-        this.log('start');
-    }
-
-    logStop() {
-        this.log('stop');
-    }
-
-    getByHost() {
-        return this.store.records;
-    }
-}
-
-//const logger = new MediaEventLogger(new LogStoreInMemoryImpl(hostKey));
-const logger = new MediaEventLogger(new LogStoreSyncImpl(hostKey, browser.storage.sync));
-const timeController = new TimeController(hostKey, logger);
-
-function changeOptions(changes, area) {
+function onMessage(message, request, response)
+ {
+     if (message.msg == 'tab-activated') {
+         if (message.url == location.href) {
+             //console.log(message, location.href)
+             if (!video.paused)
+                 checkTime("");
+         }
+     }
+ }
+function onChangeOptions(changes, area) {
     const opts = changes["options"];
     if (!opts) return;
     if (opts.oldValue != opts.newValue) {
@@ -78,19 +48,23 @@ function getAlert() {
 function onDOMContentLoaded() {
     video = document.querySelector('video');
 
+    timingFrame = new TimeFrame();
+    logger = new MediaEventLogger(new LogStoreSyncImpl(hostKey, browser.storage.sync), "");
+    timeController = new TimeController(hostKey, logger);
+
     if (video) {
-        console.log("Attaching video events!");
+        //console.log("Attaching video events!");
 
         if (!video.paused)
-            playStarted('');
+            onPlayStarted('');
 
-        video.addEventListener('play', (event) => playStarted());
-        video.addEventListener('ended', (event) => playStopped('ended'));
-        video.addEventListener('pause', (event) => playStopped('pause'));
+        video.addEventListener('play', (event) => onPlayStarted());
+        video.addEventListener('ended', (event) => onPlayStopped('ended'));
+        video.addEventListener('pause', (event) => onPlayStopped('pause'));
 
         startTimer();
     } else {
-        console.error("video is null!", "trying to onDOMContentLoaded in 3 seconds");
+        console.warn("video is null!", "trying to onDOMContentLoaded in 3 seconds");
         setTimeout(onDOMContentLoaded, 2000);
     }
 }
@@ -107,13 +81,13 @@ function stopTimer() {
     }
 }
 
-function playStarted(txt = 'play') {
+function onPlayStarted(txt = 'play') {
     logger.logPlay();
     checkTime('');
     startTimer();
 }
 
-function playStopped(txt) {
+function onPlayStopped(txt) {
     logger.logStop();
     checkTime('');
     stopTimer();
@@ -122,11 +96,11 @@ function playStopped(txt) {
 function checkTime(txt) {
     const seconds = timeController.calculateSeconds();
     const totalMins = options.minutes;
-    const time = `${txt} ${secs2Mins(seconds)}/${totalMins}:00`;
-    timingFrame.text = `${secs2Mins(seconds,'')}/${totalMins}:00`;
+    const time = `${txt} ${secs2Mins(seconds)}/${secs2Mins(totalMins*60)}`;
+    timingFrame.text = time;
     browser.runtime.sendMessage({
-        badgeText: time,
-        browserActionTitle: "Youtube time controller: " + message.badgeText
+        badgeText: secs2Mins(seconds),
+        browserActionTitle: "Youtube time controller: " + time
     });
     const secsLimit = totalMins * 60;
     if (seconds > secsLimit) {
@@ -144,20 +118,10 @@ function exitFullScreen() {
     }
 }
 
-const wndResize = debounce(() => {
-    getAlert().setPosition();
-}, 200);
-
-function wndUnload() {
+function onWndUnload() {
     //    console.log("wndUnload")
-    window.removeEventListener("resize", wndResize);
+    window.removeEventListener("resize", onWndResize);
 }
-
-window.addEventListener("resize", wndResize);
-window.addEventListener("unload", wndUnload);
-document.addEventListener("DOMContentLoaded", onDOMContentLoaded, {
-    once: true
-});
 
 if (document.readyState != "loading")
     onDOMContentLoaded();

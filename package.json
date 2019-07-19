@@ -4,8 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "lint": "npx web-ext lint",
+    "lint": "npx web-ext lint --warnings-as-errors",
     "start": "web-ext run",
+    "build": "npx web-ext build --overwrite-dest",
     "test": "firefox $(pwd)/tests/mocha.html"
   },
   "repository": {
